@@ -16,7 +16,7 @@ spec:
       containers:
         - name: order-service
           image: microservices-ci-cd-order-service:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8082
           env:
@@ -31,6 +31,27 @@ spec:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: APP_ENV
+            - name: ZIPKIN_ENDPOINT
+              value: http://zipkin.observability.svc.cluster.local:9411/api/v2/spans
 
             - name: LOGGING_PATTERN_CONSOLE
-              value: "%d{HH:mm:ss} %-5level [%X{correlationId}] %logger{36} - %msg%n"
+              value: "%d{HH:mm:ss} %-5level [corr:%X{correlationId}] [trace:%X{traceId}] [span:%X{spanId}] %logger{36} - %msg%n"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8082
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8082
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

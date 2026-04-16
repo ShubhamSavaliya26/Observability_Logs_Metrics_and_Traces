@@ -7,6 +7,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
+import io.micrometer.tracing.propagation.Propagator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -30,6 +31,7 @@ public class OrderController {
     private final OrderRepository repo;
     private final RestTemplate restTemplate;
     private final Tracer tracer;
+    private final Propagator propagator;
     private final Counter ordersCreatedCounter;
 
     @Value("${product.service.url}")
@@ -39,11 +41,13 @@ public class OrderController {
             OrderRepository repo,
             RestTemplate restTemplate,
             MeterRegistry meterRegistry,
-            Tracer tracer
+            Tracer tracer,
+            Propagator propagator
     ) {
         this.repo = repo;
         this.restTemplate = restTemplate;
         this.tracer = tracer;
+        this.propagator = propagator;
         this.ordersCreatedCounter = Counter.builder("orders_created_total")
                 .description("Total number of orders created")
                 .register(meterRegistry);
@@ -79,6 +83,7 @@ public class OrderController {
             MDC.put("correlationId", correlationId);
         }
 
+
         log.info("Calling product-service at {} to retrieve product with id: {}",
                 productUrl, order.getProductId());
 
@@ -88,6 +93,7 @@ public class OrderController {
         try (Tracer.SpanInScope ws = tracer.withSpan(customSpan.start())) {
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-Correlation-Id", correlationId);
+            propagator.inject(customSpan.context(), headers, HttpHeaders::set);
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 

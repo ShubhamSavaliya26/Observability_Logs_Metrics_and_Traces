@@ -1,4 +1,5 @@
-package com.example.product_service.controller;
+
+        package com.example.product_service.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +32,12 @@ public class ProductController {
 
         return repo.findById(id)
                 .map(product -> {
-                    log.info("Product found with id: {}, name: {}, price: {}", 
+                    log.info("Product found with id: {}, name: {}, price: {}",
                             product.getId(), product.getName(), product.getPrice());
                     return product;
                 })
-                    
-                .orElseGet(() -> 
+
+                .orElseGet(() ->
                 {
                     log.warn("Product not found for id: {}", id);
                     log.error("Failed to retrieve product because no product exists for id: {}", id);
